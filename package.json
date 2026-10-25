@@ -1,0 +1,19 @@
+{
+  "name": "meetsphere-backend",
+  "version": "1.0.0",
+  "description": "MeetBefore / MeetSphere with Gemma AI Smart Match Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "meetbefore",
+    "meetsphere",
+    "gemma",
+    "ai",
+    "gemini-api"
+  ],
+  "author": "",
+  "license": "MIT"
+}

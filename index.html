@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MeetBefore - Meet your people before the event</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Demo Notice Banner (Shows whether Firebase is live or in demo mode) -->
+  <div id="demo-banner" class="demo-banner">
+    <span id="banner-text">⚡ Running in instant Demo Mode with simulated live sync.</span>
+    <a href="javascript:void(0)" onclick="app.openSettingsModal()">⚙️ Firebase & AI Settings</a>
+  </div>
+
+  <!-- Top Header -->
+  <header class="header">
+    <div class="header-container">
+      <div class="brand" onclick="app.switchTab('events')">
+        <div class="brand-icon">🤝</div>
+        <div>
+          <h1 class="brand-title">MeetSphere</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- AI Assistant Shortcut -->
+        <button class="btn btn-outline btn-sm" onclick="app.openSmartMatchAssistant('connections')" title="Open Gemma AI Smart Match Assistant">
+          🤖 Smart Match AI
+        </button>
+
+        <!-- Logged Out State -->
+        <div id="auth-logged-out" style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="app.openLoginModal()">Sign In</button>
+        </div>
+
+        <!-- Logged In State -->
+        <div id="auth-logged-in" style="display: none; align-items: center; gap: 10px;">
+          <div class="user-pill" onclick="app.openProfileModal()" title="View / Edit Profile">
+            <div id="header-user-avatar" class="user-avatar-circle">U</div>
+            <span id="header-user-name" class="user-first-name">Friend</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="app.logout()" title="Sign Out">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <button class="nav-tab active" id="tab-events" onclick="app.switchTab('events')">
+        🎪 Events
+      </button>
+      <button class="nav-tab" id="tab-connections" onclick="app.switchTab('connections')">
+        🤝 Connections
+        <span class="badge-count" id="requests-badge" style="display: none;">0</span>
+      </button>
+      <button class="nav-tab" id="tab-chats" onclick="app.switchTab('chats')">
+        💬 Chats
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: EVENTS LIST -->
+    <!-- ========================================== -->
+    <section id="view-events">
+      <!-- Tagline Hero Banner -->
+      <div class="hero-banner">
+        <h2 class="hero-tagline">“Meet your people before you reach the event, so nobody walks in alone.”</h2>
+        <p class="hero-subtext">
+          Going to a hackathon, college fest, or workshop? Connect with attendees beforehand, find teammates, break the ice, and walk in together with new friends!
+        </p>
+        <div class="hero-buttons">
+          <button class="btn btn-hero" onclick="app.openCreateEventModal()">
+            ➕ Create an Event
+          </button>
+          <button class="btn btn-hero-ghost" onclick="app.openLoginModal()" id="hero-join-btn">
+            👋 Join MeetBefore
+          </button>
+        </div>
+      </div>
+
+      <!-- Events List Header -->
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">Upcoming Events</h3>
+          <p class="section-subtitle">Select an event to see who is going and say hi!</p>
+        </div>
+      </div>
+
+      <!-- Events Grid Container -->
+      <div class="events-grid" id="events-container">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: EVENT DETAIL & ATTENDEES -->
+    <!-- ========================================== -->
+    <section id="view-event-detail" style="display: none;">
+      <div class="event-back-btn" onclick="app.switchTab('events')">
+        ← Back to all events
+      </div>
+
+      <!-- Event Header Card -->
+      <div class="event-detail-header" id="event-detail-card">
+        <span class="event-badge" id="event-detail-type">EVENT</span>
+        <h2 class="event-detail-title" id="event-detail-title">Loading event...</h2>
+        
+        <div class="event-detail-meta">
+          <span id="event-detail-date">📅 Date</span>
+          <span id="event-detail-place">📍 Location</span>
+          <span id="event-detail-count" class="attendees-pill">👥 0 people going</span>
+        </div>
+
+        <p class="event-desc" id="event-detail-desc" style="-webkit-line-clamp: unset; max-height: none;">
+          Description
+        </p>
+
+        <div class="event-detail-actions">
+          <button class="btn btn-primary" id="btn-toggle-going" onclick="app.toggleGoingCurrentEvent()">
+            🚀 I'm Going!
+          </button>
+          <button class="btn btn-outline" id="btn-ai-suggest" onclick="app.openSmartMatchAssistant('connections')">
+            🤖 Smart Match Assistant (Gemma AI)
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="filters-section">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="attendees-search" class="search-input" placeholder="Search attendees by name or goal..." oninput="app.filterAttendees()">
+        </div>
+
+        <!-- Filter by Skill -->
+        <div class="filter-row">
+          <span class="filter-label">Filter by Skill:</span>
+          <div class="filter-chips" id="skill-filter-chips">
+            <span class="filter-chip active" data-skill="ALL" onclick="app.setSkillFilter('ALL')">All Skills</span>
+            <span class="filter-chip" data-skill="Web" onclick="app.setSkillFilter('Web')">Web</span>
+            <span class="filter-chip" data-skill="AI" onclick="app.setSkillFilter('AI')">AI</span>
+            <span class="filter-chip" data-skill="Design" onclick="app.setSkillFilter('Design')">Design</span>
+            <span class="filter-chip" data-skill="Python" onclick="app.setSkillFilter('Python')">Python</span>
+            <span class="filter-chip" data-skill="Beginner" onclick="app.setSkillFilter('Beginner')">Beginner</span>
+            <span class="filter-chip" data-skill="Mobile" onclick="app.setSkillFilter('Mobile')">Mobile</span>
+          </div>
+        </div>
+
+        <!-- Filter by Interest -->
+        <div class="filter-row">
+          <span class="filter-label">Filter by Interest:</span>
+          <div class="filter-chips" id="interest-filter-chips">
+            <span class="filter-chip active" data-interest="ALL" onclick="app.setInterestFilter('ALL')">All Interests</span>
+            <span class="filter-chip" data-interest="Walk in together" onclick="app.setInterestFilter('Walk in together')">Walk in together</span>
+            <span class="filter-chip" data-interest="Hackathon team" onclick="app.setInterestFilter('Hackathon team')">Hackathon team</span>
+            <span class="filter-chip" data-interest="Meet friends" onclick="app.setInterestFilter('Meet friends')">Meet friends</span>
+            <span class="filter-chip" data-interest="Brainstorming" onclick="app.setInterestFilter('Brainstorming')">Brainstorming</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendees Grid -->
+      <div class="section-header">
+        <h3 class="section-title">
+          <span>People Going to This Event</span>
+          <span id="filtered-count" style="font-size: 0.9rem; font-weight: 500; color: var(--text-muted);"></span>
+        </h3>
+      </div>
+
+      <div class="attendees-grid" id="attendees-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: CONNECTIONS & REQUESTS -->
+    <!-- ========================================== -->
+    <section id="view-connections" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">Connections & Say Hi Requests</h3>
+          <p class="section-subtitle">Chat unlocks once both people accept!</p>
+        </div>
+      </div>
+
+      <div class="connections-section">
+        <!-- Pending Incoming Requests -->
+        <div class="requests-card">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+            🔔 Incoming "Say Hi" Requests
+          </h4>
+          <p class="section-subtitle">These people want to connect with you before the event:</p>
+          <div class="requests-list" id="incoming-requests-list">
+            <!-- Dynamic -->
+          </div>
+        </div>
+
+        <!-- Sent Pending Requests -->
+        <div class="requests-card">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+            ⏳ Sent Requests (Awaiting Reply)
+          </h4>
+          <div class="requests-list" id="sent-requests-list">
+            <!-- Dynamic -->
+          </div>
+        </div>
+
+        <!-- Accepted Friends -->
+        <div class="requests-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+                🤝 Connected Friends
+              </h4>
+              <p class="section-subtitle">You can now chat 1-on-1 or create a group to walk in together!</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="app.openCreateGroupModal()">
+              👥 Create Group Chat
+            </button>
+          </div>
+          <div class="requests-list" id="connected-friends-list">
+            <!-- Dynamic -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 4: CHATS (1-on-1 and Group) -->
+    <!-- ========================================== -->
+    <section id="view-chats" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">Chats</h3>
+          <p class="section-subtitle">Real-time messaging with your event connections & groups.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.openCreateGroupModal()">
+          👥 Create Group
+        </button>
+      </div>
+
+      <div class="chats-layout">
+        <!-- Sidebar: Chat Channels List -->
+        <div class="chats-sidebar">
+          <div style="font-size: 0.95rem; font-weight: 700;">Conversations</div>
+          <div class="chats-list" id="chats-conversations-list">
+            <!-- Dynamic -->
+          </div>
+        </div>
+
+        <!-- Chat Main Window -->
+        <div class="chat-window" id="active-chat-window">
+          <div class="chat-window-header">
+            <div>
+              <div class="chat-window-title" id="chat-header-title">Select a conversation</div>
+              <div class="chat-window-subtitle" id="chat-header-subtitle">Chat unlocks after Say Hi request is accepted</div>
+            </div>
+            <div id="chat-header-actions" style="display: none;">
+              <!-- Safety block/report in chat -->
+              <button class="btn btn-secondary btn-sm" onclick="app.openSafetyReportForCurrentChat()">⚠️ Report</button>
+            </div>
+          </div>
+
+          <!-- Messages Stream -->
+          <div class="chat-messages-container" id="chat-messages-container">
+            <div class="empty-state">
+              <div class="empty-state-icon">💬</div>
+              <div class="empty-state-title">No conversation selected</div>
+              <div class="empty-state-text">Choose a friend from the left or connect with attendees to chat!</div>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form class="chat-input-bar" id="chat-form" onsubmit="app.sendMessage(event)">
+            <input type="text" id="chat-input-text" class="chat-input" placeholder="Type a friendly message..." autocomplete="off">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: LOGIN / SIGN IN -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-login">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Sign in to MeetBefore</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-login')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 28px 20px;">
+        <div style="font-size: 44px; margin-bottom: 12px;">🤝</div>
+        <h4 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 6px;">
+          Meet your people before the event
+        </h4>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px;">
+          Sign in to RSVP to events, see who is attending, exchange "Say Hi" requests, and plan to walk in together!
+        </p>
+
+        <!-- Google Sign-In Button -->
+        <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 12px;" onclick="app.loginGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24" style="margin-right: 6px;">
+            <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <!-- Instant Demo Account Switcher -->
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">
+            Testing or no Firebase credentials configured yet?
+          </p>
+          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="app.loginDemo('user_maya')">
+              Demo: Maya (AI & Python)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="app.loginDemo('user_sam')">
+              Demo: Sam (Web & Design)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE SETUP & EDIT -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-profile">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="profile-modal-title">Set Up Your Profile</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-profile')">&times;</button>
+      </div>
+      <form class="modal-body" onsubmit="app.saveProfile(event)">
+        <!-- Safety notice: First name only -->
+        <div style="background-color: var(--primary-light); color: var(--primary); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600;">
+          🔒 Safety First: Only your first name is shown to other attendees. Your email address is never shared!
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-first-name">First Name *</label>
+          <input type="text" id="profile-first-name" class="form-input" placeholder="e.g. Maya" required maxlength="25">
+          <span class="form-hint">Only your first name will be visible to others.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Skills (Select tags that describe what you know or want to learn)</label>
+          <div class="selectable-tag-grid" id="profile-skills-grid">
+            <span class="selectable-tag" data-tag="Web" onclick="app.toggleSelectableTag(this)">Web</span>
+            <span class="selectable-tag" data-tag="AI" onclick="app.toggleSelectableTag(this)">AI</span>
+            <span class="selectable-tag" data-tag="Design" onclick="app.toggleSelectableTag(this)">Design</span>
+            <span class="selectable-tag" data-tag="Python" onclick="app.toggleSelectableTag(this)">Python</span>
+            <span class="selectable-tag" data-tag="Beginner" onclick="app.toggleSelectableTag(this)">Beginner</span>
+            <span class="selectable-tag" data-tag="Mobile" onclick="app.toggleSelectableTag(this)">Mobile</span>
+            <span class="selectable-tag" data-tag="Cloud" onclick="app.toggleSelectableTag(this)">Cloud</span>
+            <span class="selectable-tag" data-tag="Rust" onclick="app.toggleSelectableTag(this)">Rust</span>
+            <span class="selectable-tag" data-tag="Data" onclick="app.toggleSelectableTag(this)">Data</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Interests (What are you looking for before the event?)</label>
+          <div class="selectable-tag-grid" id="profile-interests-grid">
+            <span class="selectable-tag" data-tag="Walk in together" onclick="app.toggleSelectableTag(this)">Walk in together</span>
+            <span class="selectable-tag" data-tag="Hackathon team" onclick="app.toggleSelectableTag(this)">Hackathon team</span>
+            <span class="selectable-tag" data-tag="Meet friends" onclick="app.toggleSelectableTag(this)">Meet friends</span>
+            <span class="selectable-tag" data-tag="Brainstorming" onclick="app.toggleSelectableTag(this)">Brainstorming</span>
+            <span class="selectable-tag" data-tag="Mentorship" onclick="app.toggleSelectableTag(this)">Mentorship</span>
+            <span class="selectable-tag" data-tag="First hackathon" onclick="app.toggleSelectableTag(this)">First hackathon</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-goal">What I want to do at the event *</label>
+          <textarea id="profile-goal" class="form-textarea" placeholder="e.g. Looking to join a hackathon team and not walk in by myself!" required maxlength="160"></textarea>
+          <span class="form-hint">A short friendly line to break the ice (max 160 characters).</span>
+        </div>
+
+        <div class="modal-footer" style="margin: 0 -20px -20px; padding: 14px 20px;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-profile')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CREATE EVENT -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-create-event">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Create an Event</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-create-event')">&times;</button>
+      </div>
+      <form class="modal-body" onsubmit="app.saveNewEvent(event)">
+        <div class="form-group">
+          <label class="form-label" for="new-event-name">Event Name *</label>
+          <input type="text" id="new-event-name" class="form-input" placeholder="e.g. Hacktoberfest Hackathon 2026" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new-event-date">Date & Time *</label>
+          <input type="text" id="new-event-date" class="form-input" placeholder="e.g. Saturday, Oct 31 • 10:00 AM" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new-event-place">Place / Venue *</label>
+          <input type="text" id="new-event-place" class="form-input" placeholder="e.g. Student Innovation Center / Virtual" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new-event-desc">Description *</label>
+          <textarea id="new-event-desc" class="form-textarea" placeholder="Tell attendees what the event is about..." required></textarea>
+        </div>
+
+        <div class="modal-footer" style="margin: 0 -20px -20px; padding: 14px 20px;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-create-event')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CREATE GROUP CHAT -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-create-group">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Create a Group Chat</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-create-group')">&times;</button>
+      </div>
+      <form class="modal-body" onsubmit="app.saveNewGroup(event)">
+        <p class="section-subtitle">
+          Connect 3 or more people so your squad can coordinate and walk into the event together!
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="group-name">Group Name *</label>
+          <input type="text" id="group-name" class="form-input" placeholder="e.g. Walk-in Squad 🚶‍♂️ or Team Alpha" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Connected Friends (Pick at least 2 friends):</label>
+          <div id="group-friends-checkbox-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <div class="modal-footer" style="margin: 0 -20px -20px; padding: 14px 20px;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-create-group')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SMART MATCH ASSISTANT (GEMMA AI) -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-smart-match">
+    <div class="modal-box" style="max-width: 620px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5rem;">🤖</span>
+          <div>
+            <h3 class="modal-title" style="font-size: 1.15rem;">Smart Match Assistant</h3>
+            <span style="font-size: 0.72rem; color: var(--primary); font-weight: 700; background: var(--primary-light); padding: 2px 8px; border-radius: var(--radius-full);">POWERED BY GEMMA AI</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="app.closeModal('modal-smart-match')">&times;</button>
+      </div>
+
+      <!-- Assistant Sub-Navigation Tabs -->
+      <div style="display: flex; border-bottom: 1px solid var(--border); background: var(--bg-muted); overflow-x: auto; padding: 4px 10px 0; gap: 4px;">
+        <button class="ai-tab-btn active" id="ai-tab-connections" onclick="app.switchAITab('connections')">🎯 Recommend Connections</button>
+        <button class="ai-tab-btn" id="ai-tab-explain" onclick="app.switchAITab('explain')">💡 Explain Match</button>
+        <button class="ai-tab-btn" id="ai-tab-icebreakers" onclick="app.switchAITab('icebreakers')">💬 Icebreaker Questions</button>
+        <button class="ai-tab-btn" id="ai-tab-groups" onclick="app.switchAITab('groups')">👥 Recommend Groups</button>
+      </div>
+
+      <div class="modal-body" style="min-height: 280px; position: relative;">
+        <!-- Tab 1: Recommend Connections -->
+        <div id="ai-panel-connections" class="ai-panel">
+          <p class="section-subtitle">
+            Gemma AI analyzes real attendees going to this event and recommends who you should meet based on complementary skills, shared interests, and your goals!
+          </p>
+          <button class="btn btn-primary btn-sm" style="margin-top: 10px;" onclick="app.runAISmartMatch()">
+            ✨ Find Best Matches For Me
+          </button>
+          <div id="ai-connections-result" class="ai-results-box" style="display: none; margin-top: 14px;"></div>
+        </div>
+
+        <!-- Tab 2: Explain Match -->
+        <div id="ai-panel-explain" class="ai-panel" style="display: none;">
+          <p class="section-subtitle">
+            Select an attendee to see a detailed explanation of why you two would make a great pair to connect and walk in together.
+          </p>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-label">Select Attendee:</label>
+            <select id="ai-explain-target-select" class="form-select">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top: 10px;" onclick="app.runAIExplainMatch()">
+            💡 Explain Why We're A Match
+          </button>
+          <div id="ai-explain-result" class="ai-results-box" style="display: none; margin-top: 14px;"></div>
+        </div>
+
+        <!-- Tab 3: Icebreaker Questions -->
+        <div id="ai-panel-icebreakers" class="ai-panel" style="display: none;">
+          <p class="section-subtitle">
+            Gemma AI generates 3 tailored, non-awkward icebreaker questions for starting a conversation with any attendee.
+          </p>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-label">Select Attendee:</label>
+            <select id="ai-icebreaker-target-select" class="form-select">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top: 10px;" onclick="app.runAIIcebreakers()">
+            💬 Generate Icebreaker Questions
+          </button>
+          <div id="ai-icebreaker-result" class="ai-results-box" style="display: none; margin-top: 14px;"></div>
+          <button class="btn btn-secondary btn-sm" id="btn-copy-ai-icebreakers" style="display: none; margin-top: 10px;" onclick="app.copyAIIcebreakers()">
+            📋 Copy Questions to Clipboard
+          </button>
+        </div>
+
+        <!-- Tab 4: Recommend Groups -->
+        <div id="ai-panel-groups" class="ai-panel" style="display: none;">
+          <p class="section-subtitle">
+            Gemma AI evaluates groups or suggests squad ideas tailored to your interests and the real attendees going to the event.
+          </p>
+          <button class="btn btn-primary btn-sm" style="margin-top: 10px;" onclick="app.runAIRecommendGroups()">
+            👥 Recommend Suitable Squads / Groups
+          </button>
+          <div id="ai-groups-result" class="ai-results-box" style="display: none; margin-top: 14px;"></div>
+        </div>
+
+        <!-- Loading State Indicator -->
+        <div id="ai-global-loading" style="display: none; text-align: center; padding: 30px 10px;">
+          <div class="ai-spinner">🤖</div>
+          <div style="font-weight: 700; color: var(--primary); margin-top: 10px;" id="ai-loading-message">Gemma AI is analyzing attendee profiles...</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Grounding strictly in real attendee data</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="app.closeModal('modal-smart-match')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SAFETY REPORT -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-report">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Report User</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-report')">&times;</button>
+      </div>
+      <form class="modal-body" onsubmit="app.submitReport(event)">
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          We care about maintaining a safe, friendly space so nobody has to worry about uncomfortable interactions.
+        </p>
+        <input type="hidden" id="report-target-user-id">
+        <div class="form-group">
+          <label class="form-label">Reason for reporting</label>
+          <select id="report-reason" class="form-select" required>
+            <option value="Inappropriate message">Inappropriate message</option>
+            <option value="Harassment or spam">Harassment or spam</option>
+            <option value="Fake attendee profile">Fake attendee profile</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="report-details">Additional details (Optional)</label>
+          <textarea id="report-details" class="form-textarea" placeholder="Help us understand what happened..."></textarea>
+        </div>
+        <div class="modal-footer" style="margin: 0 -20px -20px; padding: 14px 20px;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-report')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SAFETY BLOCK -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-block">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🚫 Block User</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-block')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="block-target-user-id">
+        <p style="font-size: 0.95rem; color: var(--text-main);">
+          Are you sure you want to block <strong id="block-target-name">this user</strong>?
+        </p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+          They will no longer appear in your attendee list, cannot send you Say Hi requests, and will not see your profile.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-block')">Cancel</button>
+        <button type="button" class="btn btn-accent" onclick="app.confirmBlockUser()">Block User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: FIREBASE & AI SETTINGS -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Firebase & AI Settings</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-settings')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Google AI Studio API Key (Gemma / Gemini)</label>
+          <input type="password" id="settings-ai-key" class="form-input" placeholder="Paste AI API Key here...">
+          <span class="form-hint">Get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>. Stored locally or configured in ai-config.js.</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 6px 0;">
+
+        <div class="form-group">
+          <label class="form-label">Firebase Status</label>
+          <div id="settings-firebase-status" style="font-size: 0.9rem; font-weight: 600; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--bg-muted);">
+            Checking...
+          </div>
+          <span class="form-hint">You can paste keys in <code>firebase-config.js</code> directly, or enter your Firebase config JSON below.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="settings-firebase-json">Custom Firebase Config JSON (Optional)</label>
+          <textarea id="settings-firebase-json" class="form-textarea" placeholder='{"apiKey": "...", "projectId": "...", ...}' style="font-family: monospace; font-size: 0.8rem;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-settings')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="app.saveSettings()">Save & Reload</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✨</span>
+    <span id="toast-message">Notification</span>
+  </div>
+
+  <!-- Scripts: Firebase Compat SDKs via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Configuration Scripts -->
+  <script src="ai-config.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <!-- Service Modules -->
+  <script src="ai.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
